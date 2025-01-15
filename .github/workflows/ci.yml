@@ -2,13 +2,8 @@ name: "CI"
 
 on:
   push:
-    branches:
-      - "master"
-      - "6.x"
-  pull_request:
-    branches:
-      - "master"
-      - "6.x"
+    tags:
+    - '*'
 
 env:
   gradle-version: "7.5.1"
