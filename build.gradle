@@ -8,7 +8,7 @@
 
 buildscript {
     ext {
-        es_version = version.replaceAll(/\.[0-9]+$/, "")
+        es_version = version
     }
     repositories {
         maven {
