@@ -16,7 +16,9 @@ buildscript {
         }
         mavenCentral()
         gradlePluginPortal()
-        jcenter()
+        avst {
+        	url = 'https://dl.bintray.com/avast/maven/'
+        }
     }
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
