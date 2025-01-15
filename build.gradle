@@ -16,7 +16,7 @@ buildscript {
         }
         mavenCentral()
         gradlePluginPortal()
-        avst {
+        maven {
         	url = 'https://dl.bintray.com/avast/maven/'
         }
     }
