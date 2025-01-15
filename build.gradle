@@ -47,7 +47,6 @@ esplugin {
     classname pluginClassname
     licenseFile rootProject.file("LICENSE.txt")
     noticeFile rootProject.file("NOTICE.txt")
-
 }
 
 allprojects {
