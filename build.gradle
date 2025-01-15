@@ -16,12 +16,19 @@ buildscript {
         }
         mavenCentral()
         gradlePluginPortal()
+        maven {
+        	url = 'https://netflixoss.jfrog.io/artifactory/gradle-plugins/'
+        }
     }
     dependencies {
         classpath ("org.elasticsearch.gradle:build-tools:${es_version}")
 		classpath ("com.avast.gradle:gradle-docker-compose-plugin:0.14.2")
     }
 }
+
+// plugins {
+//     id 'nebula.netflixoss' version '11.5.1'
+// }
 
 apply plugin: 'java'
 apply plugin: 'elasticsearch.esplugin'
