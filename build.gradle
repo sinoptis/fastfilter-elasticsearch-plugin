@@ -16,6 +16,7 @@ buildscript {
         }
         mavenCentral()
         gradlePluginPortal()
+        jcenter()
     }
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
