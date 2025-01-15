@@ -2,9 +2,14 @@ name: "CI"
 
 on:
   push:
-    tags:
-    - '*'
-
+    branches:
+      - "master"
+      - "6.x"
+      - "7.10.2"
+  pull_request:
+    branches:
+      - "master"
+      - "6.x"
 env:
   gradle-version: "7.5.1"
   java-version: "14"
@@ -28,7 +33,7 @@ jobs:
         if: ${{ failure() }}
         run: cat /home/runner/work/fastfilter-elasticsearch-plugin/fastfilter-elasticsearch-plugin/.gradle/reaper/*/*
       - name: "GitHub release"
-        if: "contains('refs/heads/master refs/heads/6.x', github.ref)"
+        if: "contains('refs/heads/master refs/heads/6.x refs/heads/7.10.2', github.ref)"
         run: |
           version=$(cat gradle.properties | grep -e "^version *=" | awk -F" *= *" '{print $NF}')
           echo ${{ github.token }} | gh auth login --with-token
