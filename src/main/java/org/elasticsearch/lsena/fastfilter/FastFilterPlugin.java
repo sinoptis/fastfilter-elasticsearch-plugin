@@ -20,26 +20,31 @@
 
 package org.elasticsearch.lsena.fastfilter;
 
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.elasticsearch.ExceptionsHelper;
+import org.apache.lucene.index.LeafReaderContext;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.ScriptPlugin;
-import org.elasticsearch.script.*;
+import org.elasticsearch.script.FilterScript;
 import org.elasticsearch.script.FilterScript.LeafFactory;
+import org.elasticsearch.script.ScriptContext;
+import org.elasticsearch.script.ScriptEngine;
+import org.elasticsearch.script.ScriptFactory;
 import org.elasticsearch.search.lookup.SearchLookup;
-import org.roaringbitmap.RoaringBitmap;
+import org.elasticsearch.index.fielddata.ScriptDocValues;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.Base64;
+import java.nio.ByteBuffer;
+
+import org.roaringbitmap.RoaringBitmap;
+
 /**
- * RoaringBitmap plugin that allows filtering documents
- * using a base64 encoded roaringbitmap list of integers.
+ * An example script plugin that adds a {@link ScriptEngine}
+ * implementing fast_filter.
  */
 public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 
@@ -65,7 +70,7 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 				ScriptContext<T> context,
 				Map<String, String> params
 				) {
-			if (!context.equals(FilterScript.CONTEXT)) {
+			if (context.equals(FilterScript.CONTEXT) == false) {
 				throw new IllegalArgumentException(getType()
 						+ " scripts cannot be used for context ["
 						+ context.name + "]");
@@ -87,7 +92,8 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 
 		@Override
 		public Set<ScriptContext<?>> getSupportedContexts() {
-			return Set.of(ScoreScript.CONTEXT);
+			return this.getSupportedContexts();
+			//return Set.of(ScoreScript.CONTEXT);
 		}
 
 		private static class FastFilterFactory implements FilterScript.Factory,
@@ -113,6 +119,7 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 				catch (IOException e) {
 					// Do something here
 				}
+				// FastFilterLeafFactory leafFactory = new FastFilterLeafFactory(params, lookup, rBitmap);
 				return new FastFilterLeafFactory(params, lookup, rBitmap);
 			}
 		}
@@ -122,16 +129,15 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 			private final SearchLookup lookup;
 			private final String fieldName;
 			private final String opType;
+			private final String terms;
 			private final RoaringBitmap rBitmap;
-			private final boolean include;
-			private final boolean exclude;
 
 			private FastFilterLeafFactory(Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap) {
-				if (!params.containsKey("field")) {
+				if (params.containsKey("field") == false) {
 					throw new IllegalArgumentException(
 							"Missing parameter [field]");
 				}
-				if (!params.containsKey("terms")) {
+				if (params.containsKey("terms") == false) {
 					throw new IllegalArgumentException(
 							"Missing parameter [terms]");
 				}
@@ -140,60 +146,43 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 				this.rBitmap = rBitmap;
 				opType = params.get("operation").toString();
 				fieldName = params.get("field").toString();
-				include = opType.equals("include");
-				exclude = !include;
+				terms = params.get("terms").toString();
 			}
 
 
 			@Override
-			public FilterScript newInstance(DocReader docReader)
-					throws IOException {
-				DocValuesDocReader dvReader = ((DocValuesDocReader) docReader);
-				SortedNumericDocValues docValues = dvReader.getLeafReaderContext()
-						.reader().getSortedNumericDocValues(fieldName);
-
-				if (docValues == null) {
-					/*
-					 * the field and/or docValues doesn't exist in this segment
-					 */
-					return new FilterScript(params, lookup, docReader) {
-						@Override
-						public boolean execute() {
-							// return true when used as exclude filter
-							return exclude;
-						}
-					};
-				}
-
-				return new FilterScript(params, lookup, docReader) {
-					int currentDocid = -1;
-					@Override
-					public void setDocument(int docid) {
-						/*
-						 * advance has undefined behavior calling with
-						 * a docid <= its current docid
-						 */
-						try {
-							docValues.advance(docid);
-						} catch (IOException e) {
-							throw ExceptionsHelper.convertToElastic(e);
-						}
-						currentDocid = docid;
-					}
+			public FilterScript newInstance(LeafReaderContext context) throws IOException {
+				return new FilterScript(params, lookup, context) {
 
 					@Override
 					public boolean execute() {
-						final int docVal;
 						try {
-							docVal = Math.toIntExact(docValues.nextValue());
-						} catch (IOException e) {
-							throw ExceptionsHelper.convertToElastic(e);
-						}
 
-						if (exclude && rBitmap.contains(docVal)) {
-							return false;
+							final int docId;
+							if (fieldName.equals("_id")) {
+								final ScriptDocValues.Strings fieldNameValue = 
+										(ScriptDocValues.Strings)getDoc().get(fieldName);
+								docId = Integer.parseInt(fieldNameValue.getValue());	
+							} else {
+								// TODO: there must be a better way to do this
+								// we do not need the whole doc, just the value
+								// TODO2: the selected field could be a string and this will explode
+								final ScriptDocValues.Longs fieldNameValue = 
+										(ScriptDocValues.Longs)getDoc().get(fieldName);
+								docId = (int)fieldNameValue.getValue();	
+							}
+
+							if (opType.equals("exclude") && rBitmap.contains(docId)) {
+								return false;
+							}
+							else if (opType.equals("include") && !rBitmap.contains(docId)) {
+								return false;
+							}
+							return true;
+
+						} catch (Exception exception) {
+							throw exception;
 						}
-						else return !include || rBitmap.contains(docVal);
 					}
 				};
 			}
