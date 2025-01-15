@@ -16,18 +16,10 @@ buildscript {
         }
         mavenCentral()
         gradlePluginPortal()
-        maven {
-        	url = 'https://dl.bintray.com/avast/maven/'
-        }
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:${es_version}"
-
-        implementation("com.avast.gradle:gradle-docker-compose-plugin") {
-			version {
-				strictly("0.14.2") // You can also use dynamic versions
-			}
-		}
+        classpath ("org.elasticsearch.gradle:build-tools:${es_version}")
+		classpath ("com.avast.gradle:gradle-docker-compose-plugin:0.14.2")
     }
 }
 
