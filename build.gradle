@@ -22,6 +22,11 @@ buildscript {
     }
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
+        implementation('com.avast.gradle:gradle-docker-compose-plugin') {
+        version {
+            strictly '14.2'
+        }
+    }
     }
 }
 
