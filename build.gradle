@@ -15,6 +15,7 @@ buildscript {
             url = 'https://snapshots.elastic.co/maven/'
         }
         mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
