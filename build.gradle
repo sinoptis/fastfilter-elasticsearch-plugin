@@ -61,3 +61,11 @@ dependencies {
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.11.1"
     yamlRestTestImplementation "org.elasticsearch.test:framework:$es_version"
 }
+
+dependencyResolutionManagement {
+		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+		repositories {
+			mavenCentral()
+			maven { url 'https://jitpack.io' }
+		}
+	}
