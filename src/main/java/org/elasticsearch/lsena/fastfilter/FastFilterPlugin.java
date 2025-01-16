@@ -178,11 +178,11 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
                                 // TODO2: the selected field could be a string
                                 // and this will explode
                                 final ScriptDocValues.Longs fieldNameValue =
-                                    ScriptDocValues.Longs)getDoc().get(fieldName);
+                                    (ScriptDocValues.Longs)getDoc().get(fieldName);
                                 docId = (int)fieldNameValue.getValue();
                             }
 
-                            include = opType.equals("include")
+                            include = opType.equals("include");
                             if (!include && rBitmap.contains(docId)) {
                                 return false;
                             }
