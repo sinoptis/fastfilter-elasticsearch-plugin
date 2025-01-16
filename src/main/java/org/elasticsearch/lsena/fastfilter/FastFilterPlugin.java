@@ -48,145 +48,145 @@ import org.roaringbitmap.RoaringBitmap;
  */
 public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 
-	@Override
-	public ScriptEngine getScriptEngine(
-			Settings settings,
-			Collection<ScriptContext<?>> contexts
-			) {
-		return new MyFastFilterEngine();
-	}
+    @Override
+    public ScriptEngine getScriptEngine(
+            Settings settings,
+            Collection<ScriptContext<?>> contexts
+            ) {
+        return new MyFastFilterEngine();
+    }
 
-	// tag::fast_filter
-	private static class MyFastFilterEngine implements ScriptEngine {
-		@Override
-		public String getType() {
-			return "fast_filter";
-		}
+    // tag::fast_filter
+    private static class MyFastFilterEngine implements ScriptEngine {
+        @Override
+        public String getType() {
+            return "fast_filter";
+        }
 
-		@Override
-		public <T> T compile(
-				String scriptName,
-				String scriptSource,
-				ScriptContext<T> context,
-				Map<String, String> params
-				) {
-			if (context.equals(FilterScript.CONTEXT) == false) {
-				throw new IllegalArgumentException(getType()
-						+ " scripts cannot be used for context ["
-						+ context.name + "]");
-			}
-			// we use the script "source" as the script identifier
-			// in this case, we use the name fast_filter
-			if ("fast_filter".equals(scriptSource)) {
-				FilterScript.Factory factory = new FastFilterFactory();
-				return context.factoryClazz.cast(factory);
-			}
-			throw new IllegalArgumentException("Unknown script name "
-					+ scriptSource);
-		}
+        @Override
+        public <T> T compile(
+                String scriptName,
+                String scriptSource,
+                ScriptContext<T> context,
+                Map<String, String> params
+                ) {
+            if (context.equals(FilterScript.CONTEXT) == false) {
+                throw new IllegalArgumentException(getType()
+                        + " scripts cannot be used for context ["
+                        + context.name + "]");
+            }
+            // we use the script "source" as the script identifier
+            // in this case, we use the name fast_filter
+            if ("fast_filter".equals(scriptSource)) {
+                FilterScript.Factory factory = new FastFilterFactory();
+                return context.factoryClazz.cast(factory);
+            }
+            throw new IllegalArgumentException("Unknown script name "
+                    + scriptSource);
+        }
 
-		@Override
-		public void close() {
-			// optionally close resources
-		}
+        @Override
+        public void close() {
+            // optionally close resources
+        }
 
-		@Override
-		public Set<ScriptContext<?>> getSupportedContexts() {
-			return this.getSupportedContexts();
-			//return Set.of(ScoreScript.CONTEXT);
-		}
+        @Override
+        public Set<ScriptContext<?>> getSupportedContexts() {
+            return this.getSupportedContexts();
+            //return Set.of(ScoreScript.CONTEXT);
+        }
 
-		private static class FastFilterFactory implements FilterScript.Factory,
-		ScriptFactory {
-			@Override
-			public boolean isResultDeterministic() {
-				// FastFilterLeafFactory only uses deterministic APIs, this
-				// implies the results are cacheable.
-				return true;
-			}
+        private static class FastFilterFactory implements FilterScript.Factory,
+        ScriptFactory {
+            @Override
+            public boolean isResultDeterministic() {
+                // FastFilterLeafFactory only uses deterministic APIs, this
+                // implies the results are cacheable.
+                return true;
+            }
 
-			@Override
-			public LeafFactory newFactory(
-					Map<String, Object> params,
-					SearchLookup lookup
-					) {
-				final byte[] decodedTerms = Base64.getDecoder().decode(params.get("terms").toString());
-				final ByteBuffer buffer = ByteBuffer.wrap(decodedTerms);
-				RoaringBitmap rBitmap = new RoaringBitmap();
-				try {
-					rBitmap.deserialize(buffer);
-				}
-				catch (IOException e) {
-					// Do something here
-				}
-				// FastFilterLeafFactory leafFactory = new FastFilterLeafFactory(params, lookup, rBitmap);
-				return new FastFilterLeafFactory(params, lookup, rBitmap);
-			}
-		}
+            @Override
+            public LeafFactory newFactory(
+                    Map<String, Object> params,
+                    SearchLookup lookup
+                    ) {
+                final byte[] decodedTerms = Base64.getDecoder().decode(params.get("terms").toString());
+                final ByteBuffer buffer = ByteBuffer.wrap(decodedTerms);
+                RoaringBitmap rBitmap = new RoaringBitmap();
+                try {
+                    rBitmap.deserialize(buffer);
+                }
+                catch (IOException e) {
+                    // Do something here
+                }
+                // FastFilterLeafFactory leafFactory = new FastFilterLeafFactory(params, lookup, rBitmap);
+                return new FastFilterLeafFactory(params, lookup, rBitmap);
+            }
+        }
 
-		private static class FastFilterLeafFactory implements LeafFactory {
-			private final Map<String, Object> params;
-			private final SearchLookup lookup;
-			private final String fieldName;
-			private final String opType;
-			private final String terms;
-			private final RoaringBitmap rBitmap;
+        private static class FastFilterLeafFactory implements LeafFactory {
+            private final Map<String, Object> params;
+            private final SearchLookup lookup;
+            private final String fieldName;
+            private final String opType;
+            private final String terms;
+            private final RoaringBitmap rBitmap;
 
-			private FastFilterLeafFactory(Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap) {
-				if (params.containsKey("field") == false) {
-					throw new IllegalArgumentException(
-							"Missing parameter [field]");
-				}
-				if (params.containsKey("terms") == false) {
-					throw new IllegalArgumentException(
-							"Missing parameter [terms]");
-				}
-				this.params = params;
-				this.lookup = lookup;
-				this.rBitmap = rBitmap;
-				opType = params.get("operation").toString();
-				fieldName = params.get("field").toString();
-				terms = params.get("terms").toString();
-			}
+            private FastFilterLeafFactory(Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap) {
+                if (params.containsKey("field") == false) {
+                    throw new IllegalArgumentException(
+                            "Missing parameter [field]");
+                }
+                if (params.containsKey("terms") == false) {
+                    throw new IllegalArgumentException(
+                            "Missing parameter [terms]");
+                }
+                this.params = params;
+                this.lookup = lookup;
+                this.rBitmap = rBitmap;
+                opType = params.get("operation").toString();
+                fieldName = params.get("field").toString();
+                terms = params.get("terms").toString();
+            }
 
 
-			@Override
-			public FilterScript newInstance(LeafReaderContext context) throws IOException {
-				return new FilterScript(params, lookup, context) {
+            @Override
+            public FilterScript newInstance(LeafReaderContext context) throws IOException {
+                return new FilterScript(params, lookup, context) {
 
-					@Override
-					public boolean execute() {
-						try {
+                    @Override
+                    public boolean execute() {
+                        try {
 
-							final int docId;
-							if (fieldName.equals("_id")) {
-								final ScriptDocValues.Strings fieldNameValue = 
-										(ScriptDocValues.Strings)getDoc().get(fieldName);
-								docId = Integer.parseInt(fieldNameValue.getValue());	
-							} else {
-								// TODO: there must be a better way to do this
-								// we do not need the whole doc, just the value
-								// TODO2: the selected field could be a string and this will explode
-								final ScriptDocValues.Longs fieldNameValue = 
-										(ScriptDocValues.Longs)getDoc().get(fieldName);
-								docId = (int)fieldNameValue.getValue();
-							}
+                            final int docId;
+                            if (fieldName.equals("_id")) {
+                                final ScriptDocValues.Strings fieldNameValue =
+                                        (ScriptDocValues.Strings)getDoc().get(fieldName);
+                                docId = Integer.parseInt(fieldNameValue.getValue());
+                            } else {
+                                // TODO: there must be a better way to do this
+                                // we do not need the whole doc, just the value
+                                // TODO2: the selected field could be a string and this will explode
+                                final ScriptDocValues.Longs fieldNameValue =
+                                        (ScriptDocValues.Longs)getDoc().get(fieldName);
+                                docId = (int)fieldNameValue.getValue();
+                            }
 
-							if (opType.equals("exclude") && rBitmap.contains(docId)) {
-								return false;
-							}
-							else if (opType.equals("include") && !rBitmap.contains(docId)) {
-								return false;
-							}
-							return true;
+                            if (opType.equals("exclude") && rBitmap.contains(docId)) {
+                                return false;
+                            }
+                            else if (opType.equals("include") && !rBitmap.contains(docId)) {
+                                return false;
+                            }
+                            return true;
 
-						} catch (Exception exception) {
-							throw exception;
-						}
-					}
-				};
-			}
-		}
-	}
-	// end::fast_filter
+                        } catch (Exception exception) {
+                            throw exception;
+                        }
+                    }
+                };
+            }
+        }
+    }
+    // end::fast_filter
 }
