@@ -182,7 +182,7 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
                                 docId = (int)fieldNameValue.getValue();
                             }
 
-                            final bool include = opType.equals("include");
+                            boolean include = opType.equals("include");
                             if (!include && rBitmap.contains(docId)) {
                                 return false;
                             }
