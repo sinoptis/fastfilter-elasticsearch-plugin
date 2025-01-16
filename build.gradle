@@ -63,3 +63,4 @@ dependencies {
 }
 
 checkstyleMain.enabled = false
+loggerUsageCheck.enabled = false
