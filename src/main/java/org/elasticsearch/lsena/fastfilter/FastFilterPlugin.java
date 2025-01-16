@@ -134,7 +134,9 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
             private final RoaringBitmap rBitmap;
 
             private FastFilterLeafFactory(
-                Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap
+                Map<String, Object> params,
+                SearchLookup lookup,
+                RoaringBitmap rBitmap
                 ) {
                 if (params.containsKey("field") == false) {
                     throw new IllegalArgumentException(
@@ -154,7 +156,9 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
 
 
             @Override
-            public FilterScript newInstance(LeafReaderContext context) throws IOException {
+            public FilterScript newInstance(
+                LeafReaderContext context
+            ) throws IOException {
                 return new FilterScript(params, lookup, context) {
 
                     @Override
@@ -164,21 +168,25 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
                             final int docId;
                             if (fieldName.equals("_id")) {
                                 final ScriptDocValues.Strings fieldNameValue =
-                                        (ScriptDocValues.Strings)getDoc().get(fieldName);
-                                docId = Integer.parseInt(fieldNameValue.getValue());
+                                    (ScriptDocValues.Strings)getDoc().get(fieldName);
+                                docId = Integer.parseInt(
+                                    fieldNameValue.getValue()
+                                );
                             } else {
                                 // TODO: there must be a better way to do this
                                 // we do not need the whole doc, just the value
-                                // TODO2: the selected field could be a string and this will explode
+                                // TODO2: the selected field could be a string
+                                // and this will explode
                                 final ScriptDocValues.Longs fieldNameValue =
-                                        (ScriptDocValues.Longs)getDoc().get(fieldName);
+                                    ScriptDocValues.Longs)getDoc().get(fieldName);
                                 docId = (int)fieldNameValue.getValue();
                             }
 
-                            if (opType.equals("exclude") && rBitmap.contains(docId)) {
+                            include = opType.equals("include")
+                            if (!include && rBitmap.contains(docId)) {
                                 return false;
                             }
-                            else if (opType.equals("include") && !rBitmap.contains(docId)) {
+                            else if (include && !rBitmap.contains(docId)) {
                                 return false;
                             }
                             return true;
