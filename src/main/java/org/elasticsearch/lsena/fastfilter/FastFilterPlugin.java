@@ -110,7 +110,9 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
                     Map<String, Object> params,
                     SearchLookup lookup
                     ) {
-                final byte[] decodedTerms = Base64.getDecoder().decode(params.get("terms").toString());
+                final byte[] decodedTerms = Base64.getDecoder().decode(
+                    params.get("terms").toString()
+                );
                 final ByteBuffer buffer = ByteBuffer.wrap(decodedTerms);
                 RoaringBitmap rBitmap = new RoaringBitmap();
                 try {
@@ -119,7 +121,6 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
                 catch (IOException e) {
                     // Do something here
                 }
-                // FastFilterLeafFactory leafFactory = new FastFilterLeafFactory(params, lookup, rBitmap);
                 return new FastFilterLeafFactory(params, lookup, rBitmap);
             }
         }
@@ -132,7 +133,9 @@ public class FastFilterPlugin extends Plugin implements ScriptPlugin {
             private final String terms;
             private final RoaringBitmap rBitmap;
 
-            private FastFilterLeafFactory(Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap) {
+            private FastFilterLeafFactory(
+                Map<String, Object> params, SearchLookup lookup, RoaringBitmap rBitmap
+                ) {
                 if (params.containsKey("field") == false) {
                     throw new IllegalArgumentException(
                             "Missing parameter [field]");
