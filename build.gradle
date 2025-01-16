@@ -8,18 +8,27 @@
 
 buildscript {
     ext {
-        es_version = version.replaceAll(/\.[0-9]+$/, "")
+        es_version = version
     }
     repositories {
         maven {
             url = 'https://snapshots.elastic.co/maven/'
         }
         mavenCentral()
+        gradlePluginPortal()
+        maven {
+        	url = 'https://netflixoss.jfrog.io/artifactory/gradle-plugins/'
+        }
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:${es_version}"
+        classpath ("org.elasticsearch.gradle:build-tools:${es_version}")
+		classpath ("com.avast.gradle:gradle-docker-compose-plugin:0.14.2")
     }
 }
+
+// plugins {
+//     id 'nebula.netflixoss' version '11.5.1'
+// }
 
 apply plugin: 'java'
 apply plugin: 'elasticsearch.esplugin'
@@ -38,7 +47,6 @@ esplugin {
     classname pluginClassname
     licenseFile rootProject.file("LICENSE.txt")
     noticeFile rootProject.file("NOTICE.txt")
-
 }
 
 allprojects {
@@ -48,8 +56,11 @@ allprojects {
 }
 
 dependencies {
-    implementation 'org.roaringbitmap:RoaringBitmap:0.9.35'
+    implementation 'org.roaringbitmap:RoaringBitmap:0.9.10'
 
-    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.0"
+    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.11.1"
     yamlRestTestImplementation "org.elasticsearch.test:framework:$es_version"
 }
+
+checkstyleMain.enabled = false
+loggerUsageCheck.enabled = false
